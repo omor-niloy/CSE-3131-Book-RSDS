@@ -12,33 +12,63 @@ function readData($filePath) {
 
 $books = readData($filePath);
 
-function searchBookByISBN($books, $isbn) {
+function searchBooks($books, $searchTerm) {
+    $foundBooks = [];
+
     foreach ($books as $book) {
-        if ($book['isbn'] == $isbn) {
-            return $book;
+        $titleMatches = stripos($book['title'], $searchTerm) !== false;
+        $authorMatches = stripos($book['author'], $searchTerm) !== false;
+        $isbnMatches = stripos($book['isbn'], $searchTerm) !== false;
+
+        if ($titleMatches || $authorMatches || $isbnMatches) {
+            $foundBooks[] = $book;
         }
     }
-    return null; // Return null if book is not found
+
+    usort($foundBooks, function ($a, $b) use ($searchTerm) {
+        $matchesA = countMatches($a, $searchTerm);
+        $matchesB = countMatches($b, $searchTerm);
+        return $matchesA - $matchesB;
+    });
+
+    return $foundBooks;
 }
 
-$isbnToSearch = $_POST['isbn'];
-$foundBook = searchBookByISBN($books, $isbnToSearch);
+function countMatches($book, $searchTerm) {
+    $matches = 0;
 
+    $titleMatches = substr_count($book['title'], $searchTerm);
+    $authorMatches = substr_count($book['author'], $searchTerm);
+    $isbnMatches = substr_count($book['isbn'], $searchTerm);
+
+    return $titleMatches + $authorMatches;
+}
+
+function highlightMatches($text, $searchTerm) {
+    return str_ireplace($searchTerm, '<mark>' . $searchTerm . '</mark>', $text);
+}
+
+$searchTerm = $_POST['search'];
+
+$foundBooks = searchBooks($books, $searchTerm);
 ?>
+
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Book Search</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Book</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f7f7f7;
+            background-color: #f0f0f0;
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            /* height: 100vh; */
         }
 
         .container {
@@ -53,13 +83,17 @@ $foundBook = searchBookByISBN($books, $isbnToSearch);
         h1 {
             text-align: center;
             color: #007BFF;
-            font-size: 24px;
+            font-size: 28px;
             margin-bottom: 20px;
         }
 
         p {
             text-align: center;
             margin-bottom: 20px;
+        }
+
+        mark {
+            background-color: yellow;
         }
 
         button {
@@ -80,17 +114,20 @@ $foundBook = searchBookByISBN($books, $isbnToSearch);
 </head>
 <body>
     <div class="container">
-        <h1>Book Search</h1>
+        <h1>Search Results for: <?= $searchTerm ?></h1>
         <?php
-        if ($foundBook) {
-            echo "<p>Book found:</p>";
-            echo "<p>Title: " . $foundBook['title'] . "</p>";
-            echo "<p>Author: " . $foundBook['author'] . "</p>";
-            echo "<p>Available: " . ($foundBook['available'] ? 'Yes' : 'No') . "</p>";
-            echo "<p>Pages: " . $foundBook['pages'] . "</p>";
-            echo "<p>ISBN: " . $foundBook['isbn'] . "</p>";
+        if (!empty($foundBooks)) {
+            echo "<p>Books found:</p>";
+            foreach ($foundBooks as $book) {
+                echo "<p>Title: " . highlightMatches($book['title'], $searchTerm) . "</p>";
+                echo "<p>Author: " . highlightMatches($book['author'], $searchTerm) . "</p>";
+                echo "<p>Available: " . ($book['available'] ? 'Yes' : 'No') . "</p>";
+                echo "<p>Pages: " . $book['pages'] . "</p>";
+                echo "<p>ISBN: " . $book['isbn'] . "</p>";
+                echo "<br>";
+            }
         } else {
-            echo "<p>Book with ISBN $isbnToSearch not found.</p>";
+            echo "<p>No books found for the search term '$searchTerm'.</p>";
         }
         ?>
         <button type="button" onclick="location.href='index.php'">Return Home</button>

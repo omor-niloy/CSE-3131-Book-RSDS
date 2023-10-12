@@ -33,7 +33,7 @@
         }
 
         input[type="number"] {
-            width: 100%;
+            width: 94%;
             padding: 10px;
             margin-bottom: 15px;
             border: 1px solid #ddd;
@@ -41,7 +41,7 @@
         }
 
         input[type="submit"] {
-            background-color: #007BFF;
+            background-color: #c12626;
             color: #fff;
             padding: 10px 20px;
             border: none;
